@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRINCE BOOK — Billing App</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f4faf4;
+    --surface2: #e8f5e8;
+    --border: #b2ddb2;
+    --gold: #1a7a1a;
+    --gold-light: #22a022;
+    --gold-dim: rgba(26,122,26,0.10);
+    --text: #0d3b0d;
+    --text-muted: #4a7a4a;
+    --text-dim: #8ab88a;
+    --red: #c0392b;
+    --green: #1a7a1a;
+    --radius: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE TEXTURE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.08;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 40px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .logo {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+
+  .logo-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    margin-bottom: 4px;
+  }
+
+  .header-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ── LAYOUT ── */
+  .app {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 0;
+    height: calc(100vh - 73px);
+  }
+
+  /* ── LEFT PANEL ── */
+  .panel-left {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .panel-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 20px 28px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── ADD PRODUCT FORM ── */
+  .add-form {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 110px;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  label {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  input[type="text"], input[type="number"] {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  input:focus {
+    border-color: var(--gold);
+  }
+
+  input::placeholder { color: var(--text-dim); }
+
+  .btn-add {
+    width: 100%;
+    background: var(--gold);
+    color: #0c0c0f;
+    border: none;
+    padding: 11px;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .btn-add:hover { background: var(--gold-light); }
+  .btn-add:active { transform: scale(0.98); }
+
+  /* ── PRODUCT LIST ── */
+  .product-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 28px 28px;
+  }
+
+  .product-list::-webkit-scrollbar { width: 4px; }
+  .product-list::-webkit-scrollbar-track { background: transparent; }
+  .product-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+    font-size: 13px;
+    font-style: italic;
+  }
+
+  .product-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .product-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--gold);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .product-item:hover {
+    border-color: var(--border);
+    background: var(--surface2);
+  }
+
+  .product-item.selected {
+    border-color: var(--gold);
+    background: var(--gold-dim);
+  }
+
+  .product-item.selected::before { opacity: 1; }
+
+  .product-info { flex: 1; min-width: 0; }
+
+  .product-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .product-sku {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .product-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .product-price {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  .qty-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .qty-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+
+  .qty-btn:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .qty-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    min-width: 20px;
+    text-align: center;
+  }
+
+  .del-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+
+  .del-btn:hover {
+    border-color: var(--red);
+    color: var(--red);
+    background: rgba(224,82,82,0.08);
+  }
+
+  /* ── RIGHT PANEL - INVOICE ── */
+  .panel-right {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .invoice-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 40px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .toolbar-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .toolbar-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .invoice-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .toolbar-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-save {
+    padding: 9px 18px;
+    border-radius: var(--radius);
+    border: 1px solid var(--gold);
+    background: transparent;
+    color: var(--gold);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+
+  .btn-save:hover {
+    background: var(--gold-dim);
+  }
+
+  .btn-save:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    border-color: var(--border);
+    color: var(--text-muted);
+  }
+
+  .btn-save.saved {
+    background: var(--gold-dim);
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+    padding: 9px 18px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .btn-clear:hover {
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  .btn-print {
+    padding: 9px 22px;
+    border-radius: var(--radius);
+    border: none;
+    background: var(--gold);
+    color: #0c0c0f;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: all 0.2s;
+  }
+
+  .btn-print:hover { background: var(--gold-light); }
+  .btn-print:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── INVOICE PREVIEW ── */
+  .invoice-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px;
+  }
+
+  .invoice-scroll::-webkit-scrollbar { width: 4px; }
+  .invoice-scroll::-webkit-scrollbar-track { background: transparent; }
+  .invoice-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .invoice-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 14px;
+    color: var(--text-dim);
+  }
+
+  .invoice-empty-icon {
+    font-size: 48px;
+    opacity: 0.3;
+  }
+
+  .invoice-empty p {
+    font-size: 14px;
+    font-style: italic;
+  }
+
+  /* ── INVOICE DOCUMENT ── */
+  .invoice-doc {
+    max-width: 720px;
+    margin: 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(26,122,26,0.10);
+  }
+
+  .invoice-header {
+    padding: 40px 48px 32px;
+    background: linear-gradient(135deg, #e8f5e8 0%, #f4faf4 100%);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .inv-brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -1px;
+  }
+
+  .inv-brand span {
+    color: var(--gold);
+  }
+
+  .inv-tagline {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .inv-meta {
+    text-align: right;
+  }
+
+  .inv-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .inv-value {
+    font-size: 14px;
+    color: var(--text);
+    margin-top: 3px;
+  }
+
+  .inv-invoice-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--gold);
+    margin-top: 16px;
+  }
+
+  .invoice-body {
+    padding: 32px 48px;
+  }
+
+  /* ── TABLE ── */
+  .inv-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+  }
+
+  .inv-table thead tr {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .inv-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0 0 14px;
+    text-align: left;
+    font-weight: 400;
+  }
+
+  .inv-table th:last-child,
+  .inv-table th:nth-child(2),
+  .inv-table th:nth-child(3) { text-align: right; }
+
+  .inv-table tbody tr {
+    border-bottom: 1px solid rgba(42,42,53,0.5);
+    transition: background 0.15s;
+  }
+
+  .inv-table tbody tr:last-child { border-bottom: none; }
+
+  .inv-table td {
+    padding: 14px 0;
+    font-size: 14px;
+    color: var(--text);
+    vertical-align: middle;
+  }
+
+  .inv-table td:nth-child(2),
+  .inv-table td:nth-child(3),
+  .inv-table td:nth-child(4) { text-align: right; }
+
+  .td-name { font-weight: 500; }
+
+  .td-qty {
+    font-family: 'DM Mono', monospace;
+    color: var(--text-muted);
+  }
+
+  .td-unit {
+    font-family: 'DM Mono', monospace;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .td-total {
+    font-family: 'DM Mono', monospace;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* ── TOTALS ── */
+  .invoice-totals {
+    padding: 24px 48px 40px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .totals-box {
+    min-width: 260px;
+  }
+
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 14px;
+  }
+
+  .total-row .t-label {
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  .total-row .t-value {
+    font-family: 'DM Mono', monospace;
+    color: var(--text);
+  }
+
+  .total-row.grand {
+    border-top: 1px solid var(--gold);
+    margin-top: 8px;
+    padding-top: 16px;
+  }
+
+  .total-row.grand .t-label {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .total-row.grand .t-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+  }
+
+  .invoice-footer {
+    padding: 20px 48px;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-note {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  .footer-stamp {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    padding: 4px 10px;
+    border-radius: 4px;
+    opacity: 0.6;
+  }
+
+  /* ── NOTIFICATIONS ── */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: var(--surface2);
+    border: 1px solid var(--gold);
+    color: var(--text);
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ── SEARCH BAR ── */
+  .search-wrap {
+    padding: 12px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    position: relative;
+  }
+
+  .search-input-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-wrap .search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--text-muted);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+  }
+
+  #inp-search {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 36px 10px 36px;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s, border-radius 0.15s;
+  }
+
+  #inp-search:focus { border-color: var(--gold); }
+  #inp-search.open { border-radius: var(--radius) var(--radius) 0 0; border-color: var(--gold); }
+  #inp-search::placeholder { color: var(--text-dim); }
+
+  .search-clear {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 6px;
+    line-height: 1;
+    display: none;
+    transition: color 0.15s;
+    border-radius: 4px;
+  }
+
+  .search-clear:hover { color: var(--red); background: rgba(192,57,43,0.08); }
+  .search-clear.visible { display: flex; align-items: center; justify-content: center; }
+
+  /* ── DROPDOWN ── */
+  .search-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: var(--surface);
+    border: 1px solid var(--gold);
+    border-top: none;
+    border-radius: 0 0 var(--radius) var(--radius);
+    z-index: 200;
+    max-height: 280px;
+    overflow-y: auto;
+    display: none;
+    box-shadow: 0 8px 24px rgba(26,122,26,0.12);
+  }
+
+  .search-dropdown.open { display: block; }
+
+  .search-dropdown::-webkit-scrollbar { width: 4px; }
+  .search-dropdown::-webkit-scrollbar-track { background: transparent; }
+  .search-dropdown::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .drop-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    gap: 10px;
+  }
+
+  .drop-item:last-child { border-bottom: none; }
+
+  .drop-item:hover {
+    background: var(--gold-dim);
+  }
+
+  .drop-item:hover .drop-add {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .drop-item-info { flex: 1; min-width: 0; }
+
+  .drop-item-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .drop-item-sku {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .drop-item-price {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--gold);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .drop-add {
+    background: var(--gold);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.15s, transform 0.15s, background 0.15s;
+    white-space: nowrap;
+  }
+
+  .drop-add:hover { background: var(--gold-light); }
+
+  .drop-item.already-added .drop-add {
+    opacity: 1;
+    transform: scale(1);
+    background: var(--surface2);
+    color: var(--gold);
+    border: 1px solid var(--border);
+  }
+
+  .drop-empty {
+    padding: 20px 14px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+    font-style: italic;
+  }
+
+  .drop-hint {
+    padding: 7px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .highlight {
+    background: rgba(26,122,26,0.18);
+    color: var(--gold);
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+
+  /* ─────────────────────────────────────── */
+  /* ── RESPONSIVE ── */
+  /* ─────────────────────────────────────── */
+  @media (max-width: 1000px) {
+    header {
+      padding: 18px 20px;
+    }
+
+    .app {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+      height: auto;
+      min-height: calc(100vh - 65px);
+    }
+
+    .panel-left {
+      border-right: none;
+      border-bottom: 2px solid var(--border);
+      height: auto;
+      max-height: 60vh;
+      overflow: hidden;
+    }
+
+    .product-list {
+      max-height: 36vh;
+      overflow-y: auto;
+    }
+
+    .panel-right {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .invoice-toolbar {
+      padding: 14px 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .toolbar-actions {
+      flex-wrap: wrap;
+    }
+
+    .invoice-scroll {
+      padding: 20px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .invoice-header {
+      padding: 24px 24px 20px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .inv-brand { font-size: 24px; }
+
+    .invoice-body { padding: 20px 24px; }
+
+    .invoice-totals { padding: 18px 24px 28px; }
+
+    .invoice-footer { padding: 16px 24px; }
+
+    .add-form { padding: 16px 20px; }
+
+    .product-list { padding: 8px 20px 20px; }
+
+    .panel-title { padding: 16px 20px 12px; }
+  }
+
+  @media (max-width: 500px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .toolbar-actions {
+      width: 100%;
+      justify-content: flex-end;
+    }
+
+    .inv-brand { font-size: 20px; }
+
+    .inv-table th, .inv-table td { font-size: 12px; }
+
+    .invoice-header { flex-direction: column; }
+
+    .inv-meta { text-align: left; }
+  }
+
+  /* ── PAYMENT DETAILS ── */
+  .invoice-payment {
+    margin: 0 48px 0;
+    padding: 16px 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--gold-dim);
+    margin-bottom: 0;
+  }
+
+  .pay-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+
+  .pay-methods {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .pay-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .pay-label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .pay-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: 0.5px;
+  }
+
+  .pay-divider {
+    width: 1px;
+    height: 32px;
+    background: var(--border);
+  }
+
+  /* ─────────────────────────────────────── */
+  /* ── PRINT STYLES ── */
+  /* ─────────────────────────────────────── */
+  @media print {
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    body { background: #fff !important; }
+    body::before { display: none !important; }
+
+    header,
+    .panel-left,
+    .invoice-toolbar,
+    .invoice-empty,
+    .toast { display: none !important; }
+
+    .app {
+      display: block !important;
+      height: auto !important;
+    }
+
+    .panel-right {
+      display: block !important;
+      background: #fff !important;
+    }
+
+    .invoice-scroll {
+      overflow: visible !important;
+      padding: 0 !important;
+      height: auto !important;
+    }
+
+    .invoice-doc {
+      display: block !important;
+      max-width: 100% !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      background: #fff !important;
+    }
+
+    .invoice-header {
+      background: #f0f8f0 !important;
+      border-bottom: 2px solid #1a7a1a !important;
+      padding: 28px 40px 22px !important;
+    }
+
+    .inv-brand { color: #0d3b0d !important; }
+    .inv-brand span { color: #1a7a1a !important; }
+    .inv-tagline { color: #4a7a4a !important; }
+    .inv-label { color: #4a7a4a !important; }
+    .inv-value { color: #0d3b0d !important; }
+    .inv-invoice-num { color: #1a7a1a !important; }
+
+    .invoice-body { padding: 24px 40px !important; }
+
+    .inv-table th { color: #4a7a4a !important; }
+    .inv-table td { color: #0d3b0d !important; }
+    .td-qty, .td-unit { color: #4a7a4a !important; }
+    .inv-table tbody tr { border-bottom-color: #e0ede0 !important; }
+    .inv-table thead tr { border-bottom-color: #b2ddb2 !important; }
+
+    .invoice-totals {
+      border-top-color: #b2ddb2 !important;
+      padding: 18px 40px 28px !important;
+    }
+
+    .total-row .t-label { color: #4a7a4a !important; }
+    .total-row .t-value { color: #0d3b0d !important; }
+    .total-row.grand { border-top-color: #1a7a1a !important; }
+    .total-row.grand .t-label { color: #0d3b0d !important; }
+    .total-row.grand .t-value { color: #1a7a1a !important; }
+
+    .invoice-footer {
+      background: #f0f8f0 !important;
+      border-top-color: #b2ddb2 !important;
+    }
+
+    .footer-note { color: #4a7a4a !important; }
+    .footer-stamp { color: #1a7a1a !important; border-color: #1a7a1a !important; }
+
+    /* payment details */
+    .invoice-payment {
+      margin: 0 40px !important;
+      border-color: #b2ddb2 !important;
+      background: #f0f8f0 !important;
+    }
+    .pay-title { color: #1a7a1a !important; }
+    .pay-label { color: #4a7a4a !important; }
+    .pay-num { color: #0d3b0d !important; }
+    .pay-divider { background: #b2ddb2 !important; }
+
+    /* qty controls hidden in print */
+    .qty-control, .del-btn { display: none !important; }
+
+    @page {
+      margin: 15mm;
+      size: A4;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-text">PRINCE BOOK</span>
+    <div class="logo-dot"></div>
+  </div>
+  <div class="header-meta">Billing & Invoicing System</div>
+</header>
+
+<div class="app">
+  <!-- ── LEFT: PRODUCT MANAGEMENT ── -->
+  <div class="panel-left">
+    <div class="panel-title">Product Catalog</div>
+
+    <div class="search-wrap">
+      <div class="search-input-row">
+        <span class="search-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
+        <input type="text" id="inp-search" placeholder="Search & add products to invoice…" oninput="onSearch(this)" onfocus="openDropdown()" autocomplete="off" />
+        <button class="search-clear" id="search-clear" onclick="clearSearch()" title="Clear">✕</button>
+        <div class="search-dropdown" id="search-dropdown"></div>
+      </div>
+    </div>
+
+    <div class="add-form">
+      <div class="form-row">
+        <div class="input-group">
+          <label>Product Name</label>
+          <input type="text" id="inp-name" placeholder="e.g. Web Design Package" />
+        </div>
+        <div class="input-group">
+          <label>Price ($)</label>
+          <input type="number" id="inp-price" placeholder="0.00" min="0" step="0.01" />
+        </div>
+      </div>
+      <button class="btn-add" onclick="addProduct()">+ Add to Catalog</button>
+    </div>
+
+    <div class="product-list" id="product-list">
+      <div class="empty-state" id="empty-catalog">No products yet. Add one above.</div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: INVOICE ── -->
+  <div class="panel-right">
+    <div class="invoice-toolbar">
+      <div class="toolbar-left">
+        <div class="toolbar-title">Invoice Preview</div>
+        <div class="invoice-number" id="inv-num-display">INV-0001</div>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn-save" id="btn-save" onclick="saveInvoice()" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          Save
+        </button>
+        <button class="btn-clear" onclick="clearInvoice()">Clear Invoice</button>
+        <button class="btn-print" id="btn-print" onclick="downloadPDF()" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Download PDF
+        </button>
+      </div>
+    </div>
+
+    <div class="invoice-scroll" id="invoice-scroll">
+      <div class="invoice-empty" id="invoice-empty">
+        <div class="invoice-empty-icon">🧾</div>
+        <p>Select products from the catalog to build your invoice.</p>
+      </div>
+
+      <div class="invoice-doc" id="invoice-doc" style="display:none">
+        <div class="invoice-header">
+          <div>
+            <div class="inv-brand">PRINCE <span>BOOK</span></div>
+            <div class="inv-tagline">Professional Billing</div>
+          </div>
+          <div class="inv-meta">
+            <div>
+              <div class="inv-label">Date</div>
+              <div class="inv-value" id="inv-date">—</div>
+            </div>
+            <div class="inv-invoice-num" id="inv-num">INV-0001</div>
+          </div>
+        </div>
+
+        <div class="invoice-body">
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="inv-tbody">
+            </tbody>
+          </table>
+        </div>
+
+        <div class="invoice-totals">
+          <div class="totals-box">
+            <div class="total-row">
+              <span class="t-label">Subtotal</span>
+              <span class="t-value" id="inv-subtotal">$0.00</span>
+            </div>
+            <div class="total-row">
+              <span class="t-label">Tax (0%)</span>
+              <span class="t-value">$0.00</span>
+            </div>
+            <div class="total-row grand">
+              <span class="t-label">Grand Total</span>
+              <span class="t-value" id="inv-total">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="invoice-payment">
+          <div class="pay-title">Payment Details</div>
+          <div class="pay-methods">
+            <div class="pay-item">
+              <span class="pay-label">Easypaisa</span>
+              <span class="pay-num">0346-3211660</span>
+            </div>
+            <div class="pay-divider"></div>
+            <div class="pay-item">
+              <span class="pay-label">JazzCash</span>
+              <span class="pay-num">0321-2327722</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="invoice-footer">
+          <div class="footer-note">Thank you for your business.</div>
+          <div class="footer-stamp">Unpaid</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── STATE ──
+  let products = [];
+  let selected = {}; // id -> qty
+  let invoiceCounter = 1;
+
+  // ── UTILS ──
+  const fmt = n => '$' + parseFloat(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const uid = () => Math.random().toString(36).slice(2, 7).toUpperCase();
+
+  // ── PERSISTENCE ──
+  function saveData() {
+    try {
+      localStorage.setItem('pb_products', JSON.stringify(products));
+      localStorage.setItem('pb_selected', JSON.stringify(selected));
+    } catch(e) {}
+  }
+
+  function loadData() {
+    try {
+      const p = localStorage.getItem('pb_products');
+      const s = localStorage.getItem('pb_selected');
+      if (p) products = JSON.parse(p);
+      if (s) selected = JSON.parse(s);
+    } catch(e) {}
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ── ADD PRODUCT ──
+  function addProduct() {
+    const name = document.getElementById('inp-name').value.trim();
+    const price = parseFloat(document.getElementById('inp-price').value);
+
+    if (!name) return showToast('Please enter a product name.');
+    if (isNaN(price) || price < 0) return showToast('Please enter a valid price.');
+
+    const product = {
+      id: uid(),
+      name,
+      price,
+      sku: 'SKU-' + uid()
+    };
+
+    products.push(product);
+    document.getElementById('inp-name').value = '';
+    document.getElementById('inp-price').value = '';
+    saveData();
+    renderProducts();
+    showToast(`"${name}" added to catalog.`);
+  }
+
+  // ── SEARCH / DROPDOWN ──
+  let dropOpen = false;
+
+  function highlightMatch(text, query) {
+    if (!query) return text;
+    const idx = text.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return text;
+    return text.slice(0, idx) +
+      `<span class="highlight">${text.slice(idx, idx + query.length)}</span>` +
+      text.slice(idx + query.length);
+  }
+
+  function openDropdown() {
+    const dd = document.getElementById('search-dropdown');
+    const q = document.getElementById('inp-search').value.trim();
+    if (products.length === 0) return;
+    renderDropdown(q);
+    dd.classList.add('open');
+    document.getElementById('inp-search').classList.add('open');
+    dropOpen = true;
+  }
+
+  function closeDropdown() {
+    const dd = document.getElementById('search-dropdown');
+    dd.classList.remove('open');
+    document.getElementById('inp-search').classList.remove('open');
+    dropOpen = false;
+  }
+
+  function renderDropdown(q) {
+    const dd = document.getElementById('search-dropdown');
+    if (products.length === 0) { dd.innerHTML = ''; return; }
+
+    const filtered = q
+      ? products.filter(p => p.name.toLowerCase().includes(q.toLowerCase()) || p.sku.toLowerCase().includes(q.toLowerCase()))
+      : products;
+
+    if (filtered.length === 0) {
+      dd.innerHTML = `<div class="drop-empty">No products match "<strong>${q}</strong>"</div>`;
+      return;
+    }
+
+    const hint = q
+      ? `<div class="drop-hint">${filtered.length} result${filtered.length !== 1 ? 's' : ''}</div>`
+      : `<div class="drop-hint">All products — click to add</div>`;
+
+    const items = filtered.map(p => {
+      const added = selected[p.id] > 0;
+      return `
+        <div class="drop-item${added ? ' already-added' : ''}" onmousedown="addFromSearch('${p.id}', event)">
+          <div class="drop-item-info">
+            <div class="drop-item-name">${highlightMatch(p.name, q)}</div>
+            <div class="drop-item-sku">${p.sku}</div>
+          </div>
+          <div class="drop-item-price">${fmt(p.price)}</div>
+          <button class="drop-add">${added ? '+ More' : '+ Add'}</button>
+        </div>`;
+    }).join('');
+
+    dd.innerHTML = hint + items;
+  }
+
+  function addFromSearch(id, e) {
+    e.preventDefault(); // prevent blur from closing before click registers
+    const p = products.find(x => x.id === id);
+    if (!p) return;
+    selected[id] = (selected[id] || 0) + 1;
+    saveData();
+    renderDropdown(document.getElementById('inp-search').value.trim());
+    renderProducts();
+    renderInvoice();
+    showToast(`"${p.name}" added to invoice.`);
+  }
+
+  function onSearch(inp) {
+    const q = inp.value.trim();
+    document.getElementById('search-clear').classList.toggle('visible', q.length > 0);
+    if (products.length > 0) {
+      renderDropdown(q);
+      document.getElementById('search-dropdown').classList.add('open');
+      inp.classList.add('open');
+      dropOpen = true;
+    }
+  }
+
+  function clearSearch() {
+    document.getElementById('inp-search').value = '';
+    document.getElementById('search-clear').classList.remove('visible');
+    closeDropdown();
+  }
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', e => {
+    const wrap = document.querySelector('.search-wrap');
+    if (wrap && !wrap.contains(e.target)) closeDropdown();
+  });
+
+  // ── RENDER PRODUCTS ──
+  function renderProducts() {
+    const list = document.getElementById('product-list');
+    const empty = document.getElementById('empty-catalog');
+
+    list.querySelectorAll('.product-item').forEach(el => el.remove());
+
+    if (products.length === 0) {
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+
+    products.forEach(p => {
+      const qty = selected[p.id] || 0;
+      const isSelected = qty > 0;
+
+      const item = document.createElement('div');
+      item.className = 'product-item' + (isSelected ? ' selected' : '');
+      item.id = 'prod-' + p.id;
+      item.innerHTML = `
+        <div class="product-info" onclick="toggleProduct('${p.id}')">
+          <div class="product-name">${p.name}</div>
+          <div class="product-sku">${p.sku}</div>
+        </div>
+        <div class="product-right">
+          <div class="product-price">${fmt(p.price)}</div>
+          ${isSelected ? `
+          <div class="qty-control" onclick="event.stopPropagation()">
+            <button class="qty-btn" onclick="changeQty('${p.id}', -1)">−</button>
+            <span class="qty-num">${qty}</span>
+            <button class="qty-btn" onclick="changeQty('${p.id}', 1)">+</button>
+          </div>` : ''}
+          <button class="del-btn" title="Remove product" onclick="event.stopPropagation(); deleteProduct('${p.id}')">✕</button>
+        </div>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  // ── TOGGLE SELECT ──
+  function toggleProduct(id) {
+    if (selected[id]) {
+      delete selected[id];
+    } else {
+      selected[id] = 1;
+    }
+    saveData();
+    renderProducts();
+    renderInvoice();
+  }
+
+  // ── CHANGE QTY ──
+  function changeQty(id, delta) {
+    const newQty = (selected[id] || 0) + delta;
+    if (newQty <= 0) {
+      delete selected[id];
+    } else {
+      selected[id] = newQty;
+    }
+    saveData();
+    renderProducts();
+    renderInvoice();
+  }
+
+  // ── DELETE PRODUCT ──
+  function deleteProduct(id) {
+    products = products.filter(p => p.id !== id);
+    delete selected[id];
+    saveData();
+    renderProducts();
+    renderInvoice();
+    showToast('Product removed from catalog.');
+  }
+
+  // ── RENDER INVOICE ──
+  function renderInvoice() {
+    const items = products.filter(p => selected[p.id] > 0);
+    const doc = document.getElementById('invoice-doc');
+    const empty = document.getElementById('invoice-empty');
+    const printBtn = document.getElementById('btn-print');
+    const saveBtn  = document.getElementById('btn-save');
+
+    if (items.length === 0) {
+      doc.style.display = 'none';
+      empty.style.display = 'flex';
+      printBtn.disabled = true;
+      saveBtn.disabled  = true;
+      return;
+    }
+
+    doc.style.display = 'block';
+    empty.style.display = 'none';
+    printBtn.disabled = false;
+    saveBtn.disabled  = false;
+
+    // Date
+    const now = new Date();
+    document.getElementById('inv-date').textContent = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    // Table
+    const tbody = document.getElementById('inv-tbody');
+    tbody.innerHTML = '';
+    let subtotal = 0;
+
+    items.forEach(p => {
+      const qty = selected[p.id];
+      const total = qty * p.price;
+      subtotal += total;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="td-name">${p.name}</td>
+        <td class="td-qty">${qty}</td>
+        <td class="td-unit">${fmt(p.price)}</td>
+        <td class="td-total">${fmt(total)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('inv-subtotal').textContent = fmt(subtotal);
+    document.getElementById('inv-total').textContent = fmt(subtotal);
+  }
+
+  // ── CLEAR INVOICE ──
+  function clearInvoice() {
+    selected = {};
+    saveData();
+    renderProducts();
+    renderInvoice();
+    showToast('Invoice cleared.');
+  }
+
+  // ── SAVE INVOICE ──
+  function saveInvoice() {
+    saveData();
+    const btn = document.getElementById('btn-save');
+    btn.classList.add('saved');
+    btn.innerHTML = `
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      Saved!`;
+    showToast('Invoice saved successfully.');
+    setTimeout(() => {
+      btn.classList.remove('saved');
+      btn.innerHTML = `
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Save`;
+    }, 2000);
+  }
+  // ── DOWNLOAD PDF ──
+  function downloadPDF() {
+    saveData();
+
+    const invNum = document.getElementById('inv-num-display').textContent;
+    const invDate = document.getElementById('inv-date').textContent;
+
+    const items = products.filter(p => selected[p.id] > 0);
+    let subtotal = 0;
+    const rows = items.map(p => {
+      const qty = selected[p.id];
+      const line = qty * p.price;
+      subtotal += line;
+      return `<tr>
+        <td class="td-name">${p.name}</td>
+        <td class="td-right mono">${qty}</td>
+        <td class="td-right mono">${fmt(p.price)}</td>
+        <td class="td-right mono bold">${fmt(line)}</td>
+      </tr>`;
+    }).join('');
+
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>${invNum} — PRINCE BOOK</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:#fff;color:#0d3b0d;}
+.header{display:flex;justify-content:space-between;align-items:flex-start;padding:32px 44px 24px;background:#f0f8f0;border-bottom:2px solid #1a7a1a;}
+.brand{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#0d3b0d;}
+.brand span{color:#1a7a1a;}
+.tagline{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#4a7a4a;margin-top:3px;}
+.inv-num{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#1a7a1a;text-align:right;}
+.inv-date{font-family:'DM Mono',monospace;font-size:11px;color:#4a7a4a;text-align:right;margin-top:4px;}
+.body{padding:28px 44px 0;}
+table{width:100%;border-collapse:collapse;}
+thead tr{border-bottom:1px solid #b2ddb2;}
+th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#4a7a4a;padding:0 0 12px;text-align:left;font-weight:400;}
+th.td-right{text-align:right;}
+tbody tr{border-bottom:1px solid #edf5ed;}
+tbody tr:last-child{border-bottom:none;}
+td{padding:11px 0;font-size:13px;color:#0d3b0d;}
+.td-name{font-weight:500;}
+.td-right{text-align:right;}
+.mono{font-family:'DM Mono',monospace;font-size:12px;color:#4a7a4a;}
+.bold{font-weight:500;color:#0d3b0d;}
+.totals{display:flex;justify-content:flex-end;padding:20px 44px 0;border-top:1px solid #e0ede0;margin-top:12px;}
+.totals-box{min-width:240px;}
+.t-row{display:flex;justify-content:space-between;padding:6px 0;font-size:13px;}
+.t-label{color:#4a7a4a;}
+.t-val{font-family:'DM Mono',monospace;color:#0d3b0d;}
+.t-row.grand{border-top:2px solid #1a7a1a;margin-top:8px;padding-top:12px;}
+.t-row.grand .t-label{font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:#0d3b0d;}
+.t-row.grand .t-val{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#1a7a1a;}
+.payment{margin:20px 44px 0;padding:14px 18px;border:1px solid #b2ddb2;border-radius:8px;background:#f0f8f0;}
+.pay-title{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:#1a7a1a;margin-bottom:10px;}
+.pay-row{display:flex;gap:28px;}
+.pay-item{display:flex;flex-direction:column;gap:2px;}
+.pay-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#4a7a4a;}
+.pay-num{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:#0d3b0d;}
+.footer{display:flex;justify-content:space-between;align-items:center;padding:16px 44px;background:#f0f8f0;border-top:1px solid #b2ddb2;margin-top:24px;}
+.footer-note{font-size:11px;color:#4a7a4a;font-style:italic;}
+.footer-brand{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#1a7a1a;}
+@page{margin:12mm;size:A4;}
+@media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+</style></head><body>
+<div class="header">
+  <div><div class="brand">PRINCE <span>BOOK</span></div><div class="tagline">Professional Billing</div></div>
+  <div><div class="inv-num">${invNum}</div><div class="inv-date">${invDate}</div></div>
+</div>
+<div class="body">
+  <table>
+    <thead><tr><th>Description</th><th class="td-right">Qty</th><th class="td-right">Unit Price</th><th class="td-right">Total</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+</div>
+<div class="totals">
+  <div class="totals-box">
+    <div class="t-row"><span class="t-label">Subtotal</span><span class="t-val">${fmt(subtotal)}</span></div>
+    <div class="t-row"><span class="t-label">Tax (0%)</span><span class="t-val">$0.00</span></div>
+    <div class="t-row grand"><span class="t-label">Grand Total</span><span class="t-val">${fmt(subtotal)}</span></div>
+  </div>
+</div>
+<div class="payment">
+  <div class="pay-title">Payment Details</div>
+  <div class="pay-row">
+    <div class="pay-item"><span class="pay-label">Easypaisa</span><span class="pay-num">0346-3211660</span></div>
+    <div class="pay-item"><span class="pay-label">JazzCash</span><span class="pay-num">0321-2327722</span></div>
+  </div>
+</div>
+<div class="footer">
+  <div class="footer-note">Thank you for your business.</div>
+  <div class="footer-brand">PRINCE BOOK · ${invNum}</div>
+</div>
+</body></html>`;
+
+    // Remove old iframe if any
+    const old = document.getElementById('pdf-frame');
+    if (old) old.remove();
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'pdf-frame';
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none;';
+    document.body.appendChild(iframe);
+
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+
+    // Wait for fonts/styles to load then print
+    iframe.onload = function() {
+      setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        showToast('Print dialog opened — select "Save as PDF" to download.');
+      }, 800);
+    };
+  }
+
+  document.getElementById('inp-search').addEventListener('keydown', e => {
+    if (e.key === 'Escape') { clearSearch(); document.getElementById('inp-search').blur(); }
+  });
+
+  // ── ENTER KEY on form ──
+  document.getElementById('inp-price').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addProduct();
+  });
+  document.getElementById('inp-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('inp-price').focus();
+  });
+
+  // ── SEED INVOICE NUMBER ──
+  loadData();
+  const invNum = 'INV-' + String(invoiceCounter).padStart(4, '0');
+  document.getElementById('inv-num').textContent = invNum;
+  document.getElementById('inv-num-display').textContent = invNum;
+  renderProducts();
+  renderInvoice();
+</script>
+</body>
+</html>
