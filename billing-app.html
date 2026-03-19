@@ -1114,6 +1114,9 @@
       size: A4;
     }
   }
+  .pay{
+    height: 50px;
+  }
 </style>
 </head>
 <body>
@@ -1167,8 +1170,8 @@
   <div class="panel-right">
     <div class="invoice-toolbar">
       <div class="toolbar-left">
-        <div class="toolbar-title">Invoice Preview</div>
-        <div class="invoice-number" id="inv-num-display">INV-0001</div>
+        <div class="toolbar-title">Your Bill</div>
+        <div class="invoice-number" id="inv-num-display"></div>
       </div>
       <div class="toolbar-actions">
         <button class="btn-save" id="btn-save" onclick="saveInvoice()" disabled>
@@ -1201,14 +1204,14 @@
         <div class="invoice-header">
           <div>
             <div class="inv-brand">PRINCE <span>BOOK</span></div>
-            <div class="inv-tagline">Professional Billing</div>
+            <div class="inv-tagline">SOHAIL AKHTAR</div>
           </div>
           <div class="inv-meta">
             <div>
               <div class="inv-label">Date</div>
               <div class="inv-value" id="inv-date">—</div>
             </div>
-            <div class="inv-invoice-num" id="inv-num">INV-0001</div>
+            <div class="inv-invoice-num" id="inv-num">Your Bill</div>
           </div>
         </div>
 
@@ -1248,20 +1251,25 @@
           <div class="pay-title">Payment Details</div>
           <div class="pay-methods">
             <div class="pay-item">
-              <span class="pay-label">Easypaisa</span>
-              <span class="pay-num">0346-3211660</span>
+              <span class="pay-label">
+                <span>
+                  <img src="./images/1200x630wa-removebg-preview.png" class="pay" alt="">
+                </span>Easypaisa</span>
+              <span class="pay-num">0346-3211660 => Sohail Akhtar</span>
             </div>
             <div class="pay-divider"></div>
             <div class="pay-item">
-              <span class="pay-label">JazzCash</span>
-              <span class="pay-num">0321-2327722</span>
+              <span class="pay-label"><span>
+                <img src="./images/images-removebg-preview.png" class="pay" alt="">
+              </span>JazzCash</span>
+              <span class="pay-num">0321-2327722 => Sohail Akhtar</span>
             </div>
           </div>
         </div>
 
         <div class="invoice-footer">
-          <div class="footer-note">Thank you for your business.</div>
-          <div class="footer-stamp">Unpaid</div>
+          <div class="footer-note">Thank you for visit us.</div>
+          <div class="footer-stamp">Prince Book</div>
         </div>
       </div>
     </div>
